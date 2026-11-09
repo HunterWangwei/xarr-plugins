@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${"web_title" | get_option} - 支付结果</title>
+  <link rel="icon" href='${"web_favicon" | get_option}'>
+  <link rel="stylesheet" href="${.templateAssets}/css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">${"web_title" | get_option}</div>
+    <div class="secure">安全支付</div>
+  </header>
+  <main class="wrap">
+    <section class="card">
+      <div class="result">
+        <div class="result-icon" id="icon">…</div>
+        <div class="result-title" id="title">正在查询</div>
+        <div class="muted" id="desc"></div>
+      </div>
+    </section>
+    <section class="card details" id="details" hidden>
+      <div class="row"><span>订单标题</span><span id="subject"></span></div>
+      <div class="row"><span>订单金额</span><span id="amount"></span></div>
+      <div class="row"><span>订单号</span><span class="mono" id="order-id"></span></div>
+      <div class="row"><span>商户订单号</span><span class="mono" id="out-order-id"></span></div>
+    </section>
+  </main>
+  <script src="${.templateAssets}/js/status.js"></script>
+</body>
+</html>

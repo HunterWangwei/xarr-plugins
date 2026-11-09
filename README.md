@@ -32,6 +32,9 @@ npx wrangler deploy
 | 插件 | 说明 |
 |---|---|
 | [binance_pay](plugins/binance_pay/) | 币安ID收款：通过币安官方 Pay 接口监控到账 |
+| [crypto_pay](themes/crypto_pay/)（支付主题） | 加密货币收款页：醒目显示应付 USDT 金额和币安ID，人民币只作参考；其他通道的订单按普通扫码页显示 |
+
+支付主题装好后，到后台主题管理里选用。用 `node tools/preview.js` 可以在本地预览主题，接口数据是模拟的；链接后面加 `?mode=normal` 会切换成普通订单的显示。
 
 ## 发布新版本
 
@@ -39,4 +42,4 @@ npx wrangler deploy
 2. 运行 `node build.js`（需要 Node 22 以上），它会重新生成 `dist/*.zip`、`source.json` 和 `source-cdn.json`。
 3. commit 后 push。
 
-新增插件时，在 `plugins/` 下建一个和插件名同名的目录，放入 `manifest.json` 和 `plugin.lua`。`manifest.name` 必须和目录名一致。
+新增插件或主题时，在 `plugins/` 或 `themes/` 下建一个和插件名同名的目录，放入 `manifest.json` 和 `plugin.lua`。`manifest.name` 必须和目录名一致。

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>${"web_title" | get_option} - 收银台</title>
+  <script>
+    // 本主题不做多码聚合页, 统一跳转到单笔支付页
+    (function () {
+      var id = '${.orderInfo.order_id}' || location.pathname.split('/').filter(Boolean).pop();
+      location.replace('/pay/' + encodeURIComponent(id));
+    })();
+  </script>
+</head>
+<body></body>
+</html>

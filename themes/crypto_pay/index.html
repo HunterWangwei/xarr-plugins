@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${"web_title" | get_option} - 收银台</title>
+  <link rel="icon" href='${"web_favicon" | get_option}'>
+  <link rel="stylesheet" href="${.templateAssets}/css/style.css">
+  <script>
+    window.PAGE = { orderId: '${.orderInfo.order_id}' };
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand" id="site-name">${"web_title" | get_option}</div>
+    <div class="secure">安全支付</div>
+  </header>
+
+  <main class="wrap">
+    <div class="loading" id="loading">正在加载订单…</div>
+
+    <section class="card" id="pay-card" hidden>
+      <div class="card-head">
+        <div>
+          <div class="subject" id="subject"></div>
+          <div class="muted mono" id="order-id"></div>
+        </div>
+        <div class="timer" id="timer"></div>
+      </div>
+
+      <!-- 加密货币订单 -->
+      <div id="crypto" hidden>
+        <div class="coin-panel">
+          <div class="coin-label">请转账以下金额</div>
+          <div class="coin-amount"><span id="coin-amount"></span> <span class="coin-unit" id="coin-unit"></span></div>
+          <button class="copy" data-copy="coin-amount">复制金额</button>
+        </div>
+        <div class="warn" id="coin-warn"></div>
+        <div class="field">
+          <div class="field-label">收款币安ID</div>
+          <div class="field-value mono" id="coin-account"></div>
+          <button class="copy" data-copy="coin-account">复制</button>
+        </div>
+        <img class="qr small" id="coin-qr" alt="收款码" hidden>
+        <ol class="steps">
+          <li>打开币安 App，进入「Pay」→「发送」</li>
+          <li>收款方选「币安ID」，粘贴上面的币安ID</li>
+          <li>币种选 <b id="step-unit"></b>，金额填 <b id="step-amount"></b></li>
+          <li>确认支付后本页自动跳转，无需手动操作</li>
+        </ol>
+        <div class="ref muted">订单金额约 ¥<span id="cny-ref"></span>，仅供参考，请勿按人民币金额转账</div>
+      </div>
+
+      <!-- 普通订单 -->
+      <div id="normal" hidden>
+        <div class="cny-amount">¥<span id="cny-amount"></span></div>
+        <img class="qr" id="qr" alt="支付二维码" hidden>
+        <div class="text-content" id="text-content" hidden></div>
+        <div id="html-content" hidden></div>
+        <a class="btn" id="open-app" hidden>打开 App 支付</a>
+        <div class="muted center" id="pay-hint"></div>
+      </div>
+
+      <div class="result" id="result" hidden>
+        <div class="result-icon" id="result-icon"></div>
+        <div class="result-title" id="result-title"></div>
+        <div class="muted" id="result-desc"></div>
+      </div>
+    </section>
+
+    <section class="card details" id="details" hidden>
+      <div class="row"><span>支付方式</span><span id="pay-type"></span></div>
+      <div class="row"><span>创建时间</span><span id="create-time"></span></div>
+      <div class="row" id="contact-row" hidden><span>联系商户</span><span id="contact"></span></div>
+      <button class="btn ghost" id="refresh">我已支付，刷新状态</button>
+    </section>
+  </main>
+
+  <script src="${.templateAssets}/js/pay.js"></script>
+</body>
+</html>

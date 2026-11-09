@@ -1,4 +1,4 @@
-// 打包 plugins/<name>/ 为 dist/<name>-<version>.zip, 并生成 XArrPay 应用源 source.json
+// 打包 plugins/<name>/ 和 themes/<name>/ 为 dist/<name>-<version>.zip, 并生成 XArrPay 应用源 source.json
 // 用法: node build.js
 const fs = require('fs');
 const path = require('path');
@@ -80,12 +80,29 @@ function stableUuid(name) {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
 
+// 递归列出目录下的文件(相对路径, 用 / 分隔)
+function listFiles(dir, rel = '') {
+  const out = [];
+  for (const file of fs.readdirSync(path.join(dir, rel)).sort()) {
+    const r = rel ? `${rel}/${file}` : file;
+    if (fs.statSync(path.join(dir, r)).isDirectory()) out.push(...listFiles(dir, r));
+    else out.push(r);
+  }
+  return out;
+}
+
 fs.rmSync(distDir, { recursive: true, force: true });
 fs.mkdirSync(distDir);
 
+// plugins/ 放支付插件, themes/ 放支付主题, 打包方式相同
+const sources = [];
+for (const [kind, kindDir] of [['plugins', pluginsDir], ['themes', path.join(root, 'themes')]]) {
+  if (!fs.existsSync(kindDir)) continue;
+  for (const name of fs.readdirSync(kindDir).sort()) sources.push({ kind, name, dir: path.join(kindDir, name) });
+}
+
 const plugins = [];
-for (const name of fs.readdirSync(pluginsDir).sort()) {
-  const dir = path.join(pluginsDir, name);
+for (const { kind, name, dir } of sources) {
   const manifestPath = path.join(dir, 'manifest.json');
   if (!fs.existsSync(manifestPath)) continue;
   const m = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
@@ -93,17 +110,16 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
 
   const entries = [];
   let latest = 0;
-  for (const file of fs.readdirSync(dir).sort()) {
+  for (const file of listFiles(dir)) {
     if (EXCLUDE.has(file)) continue;
     const full = path.join(dir, file);
     const st = fs.statSync(full);
-    if (!st.isFile()) continue;
     latest = Math.max(latest, st.mtimeMs);
     entries.push({ name: `${name}/${file}`, data: fs.readFileSync(full), mtime: st.mtime });
   }
   const zipName = `${name}-${m.version}.zip`;
   fs.writeFileSync(path.join(distDir, zipName), makeZip(entries));
-  plugins.push({ m, zipName, updateTime: Math.floor(latest / 1000) });
+  plugins.push({ m, kind, zipName, updateTime: Math.floor(latest / 1000) });
   console.log(`打包 ${zipName}`);
 }
 
@@ -114,7 +130,7 @@ for (const [file, base] of Object.entries(BASES)) {
     data: {
       name: STORE_NAME,
       author: AUTHOR,
-      plugins: plugins.map(({ m, zipName, updateTime }) => ({
+      plugins: plugins.map(({ m, kind, zipName, updateTime }) => ({
         uuid: stableUuid(m.name),
         title: m.title,
         name: m.name,
@@ -123,9 +139,9 @@ for (const [file, base] of Object.entries(BASES)) {
         version: m.version,
         min_program_version: m.min_program_version || '',
         author: m.author || AUTHOR,
-        homepage: `https://github.com/${REPO}/tree/${BRANCH}/plugins/${m.name}`,
+        homepage: `https://github.com/${REPO}/tree/${BRANCH}/${kind}/${m.name}`,
         preview_url: '',
-        preview_img_url: '',
+        preview_img_url: m.screenshot ? `${base}/${kind}/${m.name}/${m.screenshot}` : '',
         external_support_url: '',
         external_repository_url: `https://github.com/${REPO}`,
         download_url: `${base}/dist/${zipName}`,
