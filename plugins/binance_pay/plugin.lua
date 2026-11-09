@@ -79,9 +79,18 @@ function plugin.formItems(ctx)
                 rules = required,
             },
             {
+                name = 'show_mode', label = '支付页展示', type = types.InputTypes.SELECT, default = "text",
+                values = {
+                    { label = "文字(显示币安ID和USDT金额, 推荐)", value = "text" },
+                    { label = "收款二维码", value = "qrcode" },
+                },
+                options = { tip = '多数支付模板只显示人民币金额, 选「收款二维码」时客户可能看不到应付的币数' },
+            },
+            {
                 name = 'qrcode', label = '收款码内容', type = types.InputTypes.INPUT, default = "",
-                placeholder = "可选, 币安 App 收款码解析出的链接",
-                options = { append_deqrocde = 1, tip = '留空则只展示币安ID和金额' },
+                placeholder = "币安 App 收款码解析出的链接",
+                when = "this.formModel.options.show_mode == 'qrcode'",
+                options = { append_deqrocde = 1 },
             },
             {
                 name = 'api_host', label = '接口地址', type = types.InputTypes.INPUT,
@@ -89,7 +98,8 @@ function plugin.formItems(ctx)
                 options = { tip = '国内服务器可能需要代理或使用 api1~api4.binance.com' },
             },
             {
-                name = 'lookback', label = '回溯分钟数', type = types.InputTypes.NUMBER, default = "30",
+                name = 'lookback', label = '回溯分钟数', type = types.InputTypes.INPUT, default = "30",
+                placeholder = "30",
                 options = { tip = '每次拉取最近 N 分钟的到账记录, 建议不小于订单有效期' },
             },
         }
@@ -122,42 +132,22 @@ function plugin.create(ctx)
 
     local currency = opt.currency or "USDT"
     local amountStr = helper.amount_int2str(amount)
-    local tip = string.format("请使用币安 App 转账 %s %s 到币安ID %s, 金额必须完全一致, 否则无法自动到账",
+    local tip = string.format("请用币安 App「Pay → 发送」转账 %s %s 到币安ID %s。金额必须完全一致(页面上的人民币金额仅供参考), 否则无法自动到账",
         amountStr, currency, opt.binance_id)
 
-    if opt.qrcode and opt.qrcode ~= "" then
-        return {
-            code = 200,
-            message = tip,
-            data = {
-                type = types.PaymentResultTypes.QRCODE,
-                qrcode = opt.qrcode,
-                actual_amount = amountStr,
-                actual_account_type = "binance_id",
-                actual_account = opt.binance_id,
-            }
-        }
-    end
-
-    local html = string.format([[
-<div style="text-align:center;font-size:16px;line-height:2;padding:20px">
-  <div>请使用币安 App「Pay → 发送」转账</div>
-  <div>币安ID: <b style="font-size:22px">%s</b></div>
-  <div>金额: <b style="font-size:22px;color:#f0b90b">%s %s</b></div>
-  <div style="color:#e33">金额必须完全一致, 否则无法自动到账</div>
-</div>]], opt.binance_id, amountStr, currency)
-
-    return {
-        code = 200,
-        message = "success",
-        data = {
-            type = types.PaymentResultTypes.HTML,
-            content = html,
-            actual_amount = amountStr,
-            actual_account_type = "binance_id",
-            actual_account = opt.binance_id,
-        }
+    local data = {
+        -- text: 支付模板把 content 原样显示在二维码区域
+        type = "text",
+        content = tip,
+        actual_amount = amountStr,
+        actual_account_type = "binance_id",
+        actual_account = opt.binance_id,
     }
+    if opt.show_mode == "qrcode" and opt.qrcode and opt.qrcode ~= "" then
+        data.type = types.PaymentResultTypes.QRCODE
+        data.qrcode = opt.qrcode
+    end
+    return { code = 200, message = "success", data = data }
 end
 
 -- 币安 Pay 无回调, 到账靠定时任务
@@ -195,6 +185,11 @@ local function fetch_transactions(opt)
 end
 
 -- 账号级定时任务: 拉取到账记录 → 去重入库 → 上报匹配订单
+local function is_online(account)
+    local v = account.online
+    return v == true or v == 1 or v == "1"
+end
+
 function plugin.check_account(ctx)
     local account = ctx.account_info
     local opt = ctx.account_options
@@ -206,12 +201,15 @@ function plugin.check_account(ctx)
     if list == nil then
         log.error(PLUGIN, account.id, err)
         -- -2014/-2015: Key 无效或无权限/IP 不在白名单, 下线账号避免继续分配订单
-        if string.find(err, "-2014", 1, true) or string.find(err, "-2015", 1, true) then
+        if (string.find(err, "-2014", 1, true) or string.find(err, "-2015", 1, true)) and is_online(account) then
             helper.channel_account_offline(account.id)
         end
         return { code = 500, message = err }
     end
-    helper.channel_account_online(account.id)
+    -- 只在状态变化时切换, 每次都调用会反复触发上线通知
+    if not is_online(account) then
+        helper.channel_account_online(account.id)
+    end
 
     local currency = opt.currency or "USDT"
     local reported = 0
