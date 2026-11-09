@@ -10,6 +10,10 @@ require("autoload")
 local PLUGIN = "binance_pay"
 local CHANNEL_CODE = "binance_pay"
 local TX_PATH = "/sapi/v1/pay/transactions"
+local RATE_CACHE_KEY = "rate_cache"
+local RATE_CACHE_TTL = 300
+local P2P_URL = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
+local FX_URL = "https://open.er-api.com/v6/latest/USD"
 
 local plugin = {}
 
@@ -40,6 +44,10 @@ function plugin.pluginInfo()
                     args = "",
                     options = { has_wait_pay_order = 1 },
                 },
+            },
+            options = {
+                -- 实时汇率缓存, 由插件自动写入, 无需手动修改
+                { title = "汇率缓存(自动维护)", key = RATE_CACHE_KEY, default = "{}" },
             },
         }
     }
@@ -74,9 +82,23 @@ function plugin.formItems(ctx)
                 },
             },
             {
-                name = 'rate', label = '汇率', type = types.InputTypes.INPUT, default = "7.2",
-                options = { tip = '1 收款币 = 多少订单币(元)。订单金额 ÷ 汇率 = 应付币数, 填 1 则不换算' },
+                name = 'rate_mode', label = '汇率来源', type = types.InputTypes.SELECT, default = "fixed",
+                values = {
+                    { label = "固定汇率", value = "fixed" },
+                    { label = "币安 C2C 实时价(人民币买币价)", value = "binance_p2p" },
+                    { label = "美元兑人民币实时汇率", value = "usd_cny" },
+                },
+                options = { tip = '实时汇率每 5 分钟更新一次, 获取失败时使用上次的汇率或下面的固定汇率' },
+            },
+            {
+                name = 'rate', label = '固定汇率', type = types.InputTypes.INPUT, default = "7.2",
+                options = { tip = '1 收款币 = 多少元。订单金额 ÷ 汇率 = 应付币数, 填 1 则不换算。实时模式下作为兜底' },
                 rules = required,
+            },
+            {
+                name = 'rate_adjust', label = '汇率浮动(%)', type = types.InputTypes.INPUT, default = "0",
+                when = "this.formModel.options.rate_mode && this.formModel.options.rate_mode != 'fixed'",
+                options = { tip = '在实时汇率上调整, 如 -1 表示汇率下调 1%(客户多付约 1%), 用于覆盖手续费和波动' },
             },
             {
                 name = 'show_mode', label = '支付页展示', type = types.InputTypes.SELECT, default = "text",
@@ -114,13 +136,91 @@ local function to_coin_cents(trade_amount, rate)
     return math.ceil(trade_amount / rate - 0.000001)
 end
 
+local function http_json(method, url, body)
+    local resp, err = http.request(method, url, {
+        body = body,
+        timeout = "8s",
+        headers = { ["content-type"] = "application/json" },
+    })
+    if err ~= nil or not resp or not resp.body then
+        return nil, tostring(err)
+    end
+    return json.decode(resp.body), nil
+end
+
+-- 币安 C2C 人民币买币广告前 10 条价格的中位数
+local function fetch_p2p_rate(currency)
+    local r, err = http_json("POST", P2P_URL, json.encode({
+        fiat = "CNY", asset = currency, tradeType = "BUY", page = 1, rows = 10,
+    }))
+    if not r or r.code ~= "000000" or type(r.data) ~= "table" or #r.data == 0 then
+        return nil, "C2C 价格获取失败: " .. tostring(err or (r and r.message))
+    end
+    local prices = {}
+    for _, ad in ipairs(r.data) do
+        local p = tonumber(ad.adv and ad.adv.price)
+        if p and p > 0 then table.insert(prices, p) end
+    end
+    if #prices == 0 then return nil, "C2C 无有效报价" end
+    table.sort(prices)
+    return prices[math.ceil(#prices / 2)], nil
+end
+
+-- 美元兑人民币, 稳定币按 1:1 美元计
+local function fetch_usd_cny_rate()
+    local r, err = http_json("GET", FX_URL, nil)
+    local cny = r and r.rates and tonumber(r.rates.CNY)
+    if not cny or cny <= 0 then
+        return nil, "美元汇率获取失败: " .. tostring(err or (r and r.result))
+    end
+    return cny, nil
+end
+
+-- 返回 汇率, 来源说明。实时汇率缓存 RATE_CACHE_TTL 秒, 获取失败依次退回旧缓存、固定汇率
+local function resolve_rate(opt)
+    local fixed = tonumber(opt.rate)
+    local mode = opt.rate_mode or "fixed"
+    if mode ~= "binance_p2p" and mode ~= "usd_cny" then
+        return fixed, "fixed"
+    end
+
+    local currency = opt.currency or "USDT"
+    local key = mode .. ":" .. currency
+    local cache = json.decode(helper.get_plugin_option(PLUGIN, RATE_CACHE_KEY, "{}") or "{}") or {}
+    local hit = cache[key]
+    local now = helper.time_now_timestamp()
+    local rate
+    if hit and tonumber(hit.rate) and now - (tonumber(hit.time) or 0) < RATE_CACHE_TTL then
+        rate = tonumber(hit.rate)
+    else
+        local err
+        if mode == "binance_p2p" then
+            rate, err = fetch_p2p_rate(currency)
+        else
+            rate, err = fetch_usd_cny_rate()
+        end
+        if rate then
+            cache[key] = { rate = rate, time = now }
+            helper.set_plugin_option(PLUGIN, RATE_CACHE_KEY, json.encode(cache))
+        else
+            log.warning(PLUGIN, key, err)
+            rate = hit and tonumber(hit.rate) or nil
+            if not rate then return fixed, "fixed(实时汇率获取失败)" end
+        end
+    end
+
+    local adjust = tonumber(opt.rate_adjust) or 0
+    return rate * (1 + adjust / 100), mode
+end
+
 function plugin.create(ctx)
     local order = ctx.order_info
     local opt = ctx.account_options
-    local rate = tonumber(opt.rate)
+    local rate, source = resolve_rate(opt)
     if not rate or rate <= 0 then
         return { code = 500, message = "汇率配置错误", data = { type = types.PaymentResultTypes.ERROR } }
     end
+    log.info(PLUGIN, order.order_id, "汇率", rate, source)
     if not opt.binance_id or opt.binance_id == "" then
         return { code = 500, message = "未配置收款币安ID", data = { type = types.PaymentResultTypes.ERROR } }
     end
