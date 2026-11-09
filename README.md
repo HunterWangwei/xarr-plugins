@@ -5,7 +5,7 @@
 XArrPay 安装插件前，会先向 `{source_site}/api/v1/download/ticket` 发一个 POST 请求申请下载票据。GitHub raw 和 jsDelivr 都是静态托管，不支持 POST，所以应用源必须使用 [worker/](worker/) 里的 Cloudflare Worker 地址：
 
 ```
-https://<你的 worker 域名>/source
+https://xarr-plugins.43551096.workers.dev/source
 ```
 
 Worker 本身不存数据，`source.json` 和 zip 都实时从本仓库读取，所以发布新版本时只需要 push，不用重新部署 Worker。
