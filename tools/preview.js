@@ -24,7 +24,7 @@ const info = {
 };
 const qrcode = {
   crypto: {
-    type: 'text', content: '请用币安 App「Pay → 发送」转账 0.09 USDT 到币安ID 39701037。金额必须完全一致(页面上的人民币金额仅供参考), 否则无法自动到账',
+    type: 'text', content: '请用币安 App「Pay → 发送」转账 0.09 USDT 到币安ID 39701037。金额必须完全一致(页面上的人民币金额仅供参考), 否则无法自动到账。当前汇率 1 USDT = 6.64 元',
     actual_amount: '0.09', actual_account: '39701037', actual_account_type: 'binance_id',
   },
   normal: { type: 'qrcode', qrcode: 'https://qr.alipay.com/demo', actual_amount: '0.62' },

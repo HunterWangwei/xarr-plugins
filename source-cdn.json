@@ -11,7 +11,7 @@
         "name": "binance_pay",
         "type": 1,
         "description": "通过币安官方 Pay 交易记录接口(GET /sapi/v1/pay/transactions)监控币安ID转账到账,按递增金额匹配订单",
-        "version": "1.0.2",
+        "version": "1.0.3",
         "min_program_version": "1.5.1.9",
         "author": "HunterWangwei",
         "homepage": "https://github.com/HunterWangwei/xarr-plugins/tree/main/plugins/binance_pay",
@@ -19,13 +19,13 @@
         "preview_img_url": "",
         "external_support_url": "",
         "external_repository_url": "https://github.com/HunterWangwei/xarr-plugins",
-        "download_url": "https://cdn.jsdelivr.net/gh/HunterWangwei/xarr-plugins@main/dist/binance_pay-1.0.2.zip",
+        "download_url": "https://cdn.jsdelivr.net/gh/HunterWangwei/xarr-plugins@main/dist/binance_pay-1.0.3.zip",
         "download_install_type": 2,
         "app_url": "",
         "amount": 0,
         "pay_status": 0,
         "source_site": "https://github.com/HunterWangwei/xarr-plugins",
-        "update_time": 1794193981
+        "update_time": 1794194444
       },
       {
         "uuid": "90333b60-d0de-5bc3-acad-ab79fb11617d",
@@ -33,7 +33,7 @@
         "name": "crypto_pay",
         "type": 3,
         "description": "支付主题: 币安ID/USDT 订单醒目显示应付币数和收款ID, 人民币仅作参考; 其他通道按常规扫码页显示",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "min_program_version": "1.5.0.8",
         "author": "HunterWangwei",
         "homepage": "https://github.com/HunterWangwei/xarr-plugins/tree/main/themes/crypto_pay",
@@ -41,13 +41,13 @@
         "preview_img_url": "https://cdn.jsdelivr.net/gh/HunterWangwei/xarr-plugins@main/themes/crypto_pay/screenshot.png",
         "external_support_url": "",
         "external_repository_url": "https://github.com/HunterWangwei/xarr-plugins",
-        "download_url": "https://cdn.jsdelivr.net/gh/HunterWangwei/xarr-plugins@main/dist/crypto_pay-1.0.0.zip",
+        "download_url": "https://cdn.jsdelivr.net/gh/HunterWangwei/xarr-plugins@main/dist/crypto_pay-1.0.1.zip",
         "download_install_type": 2,
         "app_url": "",
         "amount": 0,
         "pay_status": 0,
         "source_site": "https://github.com/HunterWangwei/xarr-plugins",
-        "update_time": 1794192534
+        "update_time": 1794194444
       }
     ]
   }

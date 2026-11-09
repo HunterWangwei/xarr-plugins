@@ -232,8 +232,10 @@ function plugin.create(ctx)
 
     local currency = opt.currency or "USDT"
     local amountStr = helper.amount_int2str(amount)
-    local tip = string.format("请用币安 App「Pay → 发送」转账 %s %s 到币安ID %s。金额必须完全一致(页面上的人民币金额仅供参考), 否则无法自动到账",
-        amountStr, currency, opt.binance_id)
+    -- 汇率写进文字, 支付主题从中解析展示; 最多 4 位小数, 去掉末尾的 0
+    local rateStr = string.format("%.4f", rate):gsub("0+$", ""):gsub("%.$", "")
+    local tip = string.format("请用币安 App「Pay → 发送」转账 %s %s 到币安ID %s。金额必须完全一致(页面上的人民币金额仅供参考), 否则无法自动到账。当前汇率 1 %s = %s 元",
+        amountStr, currency, opt.binance_id, currency, rateStr)
 
     local data = {
         -- text: 支付模板把 content 原样显示在二维码区域

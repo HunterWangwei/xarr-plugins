@@ -3,7 +3,7 @@
   "title": "加密货币收款页",
   "author": "HunterWangwei",
   "description": "支付主题: 币安ID/USDT 订单醒目显示应付币数和收款ID, 人民币仅作参考; 其他通道按常规扫码页显示",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "min_program_version": "1.5.0.8",
   "type": 3,
   "screenshot": "screenshot.png"

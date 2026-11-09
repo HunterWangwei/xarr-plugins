@@ -5,6 +5,8 @@
   // 收款账号类型为这些值, 或支付内容里带币种的订单, 按加密货币展示
   var CRYPTO_ACCOUNT_TYPES = ['binance_id'];
   var COIN_RE = /([\d.]+)\s*(USDT|USDC|FDUSD|BUSD|BTC|ETH|BNB|TRX)\b/;
+  // 插件 1.0.3+ 在支付内容末尾带汇率: "当前汇率 1 USDT = 6.64 元"
+  var RATE_RE = /1\s*(USDT|USDC|FDUSD|BUSD|BTC|ETH|BNB|TRX)\s*=\s*([\d.]+)\s*元/;
 
   var $ = function (id) { return document.getElementById(id); };
   var orderId = (window.PAGE && PAGE.orderId) || location.pathname.split('/').filter(Boolean).pop();
@@ -41,6 +43,11 @@
     text('coin-account', d.actual_account || '');
     text('cny-ref', yuan(info.trade_amount));
     text('coin-warn', '必须转账 ' + amount + ' ' + unit + '，多一分少一分都无法自动到账');
+    var rate = RATE_RE.exec(d.content || '');
+    if (rate) {
+      text('coin-rate', '当前汇率 1 ' + rate[1] + ' = ' + rate[2] + ' 元');
+      show('coin-rate', true);
+    }
     var src = qrSrc(d);
     if (src) { $('coin-qr').src = src; show('coin-qr', true); }
     show('crypto', true);
