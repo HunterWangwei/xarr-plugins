@@ -2,14 +2,30 @@
 
 ## 应用源链接
 
-在 XArrPay 后台的应用商店里添加下面任意一个链接：
+XArrPay 安装插件前，会先向 `{source_site}/api/v1/download/ticket` 发一个 POST 请求申请下载票据。GitHub raw 和 jsDelivr 都是静态托管，不支持 POST，所以应用源必须使用 [worker/](worker/) 里的 Cloudflare Worker 地址：
+
+```
+https://<你的 worker 域名>/source
+```
+
+Worker 本身不存数据，`source.json` 和 zip 都实时从本仓库读取，所以发布新版本时只需要 push，不用重新部署 Worker。
+
+部署 Worker：
+
+```bash
+cd worker
+npx wrangler login
+npx wrangler deploy
+```
+
+`*.workers.dev` 域名在国内可能访问不了，建议在 Cloudflare 后台给 Worker 绑定一个自己的域名。
+
+下面两个静态文件只能用来查看插件列表，不能用来安装：
 
 | 线路 | 链接 |
 |---|---|
-| GitHub 直连 | `https://raw.githubusercontent.com/HunterWangwei/xarr-plugins/main/source.json` |
-| jsDelivr 加速（国内推荐） | `https://cdn.jsdelivr.net/gh/HunterWangwei/xarr-plugins@main/source-cdn.json` |
-
-两条线路的区别在于插件下载地址：GitHub 直连从 raw.githubusercontent.com 下载，jsDelivr 线路从 jsDelivr 下载。jsDelivr 有缓存，发布新版本后最长要等 12 小时才会更新，要立刻生效可以访问 `https://purge.jsdelivr.net/gh/HunterWangwei/xarr-plugins@main/source-cdn.json` 手动刷新。
+| GitHub | `https://raw.githubusercontent.com/HunterWangwei/xarr-plugins/main/source.json` |
+| jsDelivr | `https://cdn.jsdelivr.net/gh/HunterWangwei/xarr-plugins@main/source-cdn.json` |
 
 ## 插件列表
 
