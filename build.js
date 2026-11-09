@@ -91,8 +91,9 @@ function listFiles(dir, rel = '') {
   return out;
 }
 
-fs.rmSync(distDir, { recursive: true, force: true });
-fs.mkdirSync(distDir);
+// 只清空 dist 内容, 不删目录本身: Windows 上目录被资源管理器等占用时无法删除重建
+fs.mkdirSync(distDir, { recursive: true });
+for (const f of fs.readdirSync(distDir)) fs.rmSync(path.join(distDir, f), { recursive: true, force: true });
 
 // plugins/ 放支付插件, themes/ 放支付主题, 打包方式相同
 const sources = [];
