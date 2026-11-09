@@ -1,0 +1,32 @@
+{
+  "code": 200,
+  "message": "ok",
+  "data": {
+    "name": "HunterWangwei-xarr-plugins",
+    "author": "HunterWangwei",
+    "plugins": [
+      {
+        "uuid": "da064482-acb5-55bd-aa67-1762b7e72b5d",
+        "title": "币安ID收款",
+        "name": "binance_pay",
+        "type": 1,
+        "description": "通过币安官方 Pay 交易记录接口(GET /sapi/v1/pay/transactions)监控币安ID转账到账,按递增金额匹配订单",
+        "version": "1.0.0",
+        "min_program_version": "1.5.1.9",
+        "author": "HunterWangwei",
+        "homepage": "https://github.com/HunterWangwei/xarr-plugins/tree/main/plugins/binance_pay",
+        "preview_url": "",
+        "preview_img_url": "",
+        "external_support_url": "",
+        "external_repository_url": "https://github.com/HunterWangwei/xarr-plugins",
+        "download_url": "https://cdn.jsdelivr.net/gh/HunterWangwei/xarr-plugins@main/dist/binance_pay-1.0.0.zip",
+        "download_install_type": 2,
+        "app_url": "",
+        "amount": 0,
+        "pay_status": 0,
+        "source_site": "https://github.com/HunterWangwei/xarr-plugins",
+        "update_time": 1794188052
+      }
+    ]
+  }
+}
